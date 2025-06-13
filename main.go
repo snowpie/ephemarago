@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
      "net/http"
+	 "github.com/google/uuid"
 )
 
 var Secrets = make(map[string]func() string)
@@ -71,10 +72,12 @@ func sendmeyoursecret(w http.ResponseWriter, r *http.Request) {
 
 func stashsecret(mysecret string) string {
 
+	key := uuid.New().String()
+
 	fmt.Println("Stashing secret:", mysecret)
-	Secrets["key"] = secret(mysecret)
+	Secrets[key] = secret(mysecret)
 	fmt.Println("Secret stored successfully!")
-	return "key"
+	return key
 }
 
 func getsecret(key string) string {
