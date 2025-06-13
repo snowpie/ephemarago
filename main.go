@@ -5,13 +5,23 @@ import (
      "net/http"
 )
 
+var Secrets = make(map[string]func() string)
+
+
 func Add(a int, b int) int {
 	return a + b
 }
 
 func main() {
 	fmt.Println(Add(5, 6))
-	http.HandleFunc("/", httphandler)
+	// Create a map to hold secrets
+	// Secrets := make(map[string]func() string)
+
+
+	http.HandleFunc("/", frontpage)
+	http.HandleFunc("/secret", sendmeyoursecret)
+	http.HandleFunc("/hello", httphandler)
+
 	go func(port string) {
 		fmt.Println("Starting HTTP server...")
 		if err := http.ListenAndServe(port, nil); err != nil {
@@ -24,6 +34,8 @@ func main() {
 	select {}		
 }
 
+// secret returns a closure that captures the secret string.
+// The returned function can be called to retrieve the secret.
 func secret(mysecret string) func() string {
 	secret := mysecret
 	return func() string {
@@ -31,26 +43,61 @@ func secret(mysecret string) func() string {
 	}
 }
 
+func sendmeyoursecret(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse the form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// Get the secret from the form data
+	mysecret := r.FormValue("secret")
+	if mysecret == "" {
+		http.Error(w, "Secret is required", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, "Your secret is: %s\n", mysecret)
+	fmt.Println("Received secret:", mysecret)
+	key:=stashsecret(mysecret)
+	fmt.Fprintf(w, "Your key is: %s\n", key)
+
+}
+
+func stashsecret(mysecret string) string {
+
+	fmt.Println("Stashing secret:", mysecret)
+	Secrets["key"] = secret(mysecret)
+	fmt.Println("Secret stored successfully!")
+	return "key"
+}
+
+func getsecret(key string) string {
+	// Retrieve the secret using the key
+	if secret, exists := Secrets[key]; exists {
+		return secret()
+	}
+	return ""
+}
+
 func httphandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello, World! ")
-	fmt.Println("Received request from:", r.RemoteAddr)
-	fmt.Println("Request method:", r.Method)
-	fmt.Println("Request URL:", r.URL)
-	fmt.Println("Request headers:", r.Header)
-	fmt.Println("Request body:", r.Body)
-	fmt.Println("Request content length:", r.ContentLength)
-	fmt.Println("Request host:", r.Host)
-	fmt.Println("Request protocol:", r.Proto)
-	fmt.Println("Request user agent:", r.UserAgent())
-	fmt.Println("Request referer:", r.Referer())
-	fmt.Println("Request form:", r.Form)
-	fmt.Println("Request post form:", r.PostForm)
-	fmt.Println("Request trailer:", r.Trailer)
-	fmt.Println("Request context:", r.Context())
-	fmt.Println("Request cookies:")
-	for _, cookie := range r.Cookies() {
-		fmt.Println(" -", cookie.Name, ":", cookie.Value)
-	}
-	fmt.Println("Request URL path:", r.URL.Path)
-	fmt.Println("Request URL query:", r.URL.Query())
+}
+
+func frontpage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<html><body><h1>Welcome to the homepage!</h1>")
+	fmt.Fprintf(w, "<p>Enter your secret</p>")
+	fmt.Fprintf(w, "<form action=\"/secret\" method=\"post\">")
+	fmt.Fprintf(w, "<input type=\"text\" name=\"secret\" placeholder=\"Enter your secret\" required>")
+	fmt.Fprintf(w, "<input type=\"submit\" value=\"Submit\">")
+	fmt.Fprintf(w, "</form>")
+	fmt.Fprintf(w, "</body></html>")
+
+	fmt.Println("Homepage accessed")
+
 }
