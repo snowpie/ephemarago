@@ -2,7 +2,6 @@ package main
 
 import (
 	"assert/assert"
-	"fmt"
 	"testing"
 )
 func TestSecret(t *testing.T) {
@@ -16,10 +15,8 @@ func TestSecret(t *testing.T) {
 }
 
 func TestStachSecret(t *testing.T) {
-	fmt.Println(Secrets)
 	key1 := stashsecret("first secret")
 	key2 := stashsecret("second secret")
-	fmt.Println(Secrets)
 
 	assert.NotEqual("first key should not equal second secret", t, key1, key2)
 

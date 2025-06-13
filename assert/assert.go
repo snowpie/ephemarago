@@ -18,7 +18,7 @@ func Equal[V comparable](name string, t *testing.T, got, expected V) {
 
 func NotEqual[V comparable](name string, t *testing.T, got, expected V) {
     t.Helper()
-    fmt.Println(name)
+    // fmt.Println(name)
     if expected == got {
         t.Errorf(`assert.NotEqual( t, got: %v , expected: %v)`, got, expected)
     }
